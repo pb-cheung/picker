@@ -7,7 +7,7 @@ define(function(require,exports,module){
 		init: function(){
 			//console.log(picker);
 			var picker1 = new PICKER();
-			picker1.addSelect("#select-pcd");
+			picker1.addSelect("#select-pcd",{autoSelect:false});
 		}
 	}
 

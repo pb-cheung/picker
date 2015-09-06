@@ -20,12 +20,12 @@ define(function(require,exports,module){
 		domNewoptions: function(){
 			return '<li class="mod-dropdown-menu__item"><a href="javascript:void(0);"></a></li>';
 		},
-		addSelect: function(target){//target是css选择器字符串
+		addSelect: function(target, options){//target是css选择器字符串
 			//console.log(ChineseDistricts);
 			var _this = this;
 			_this.target = target;
 			_this.initDom();
-			var data = new Distpikcer(target);
+			var data = new Distpikcer(target, options);
 		},
 		initDom: function(){//初始化DOM结构
 			var _this = this;
@@ -36,19 +36,21 @@ define(function(require,exports,module){
 		}
 	};
 
-	var Distpikcer = function(target){
+	var Distpikcer = function(target,options){
 		this.target = target;
 		this.$element = $(target).find("[data-toggle='distpicker']");
-		this.placeholders = $.extend({}, this.defaults);
-		this.defaults = {
-			autoSelect: true,
-			province: "--选择省--",
-			city: "--选择市--",
-			district: "--选择区--",
-			placeholder: true	//占位符，即省市区三个下拉列表选项的特殊选项，如“——选择省——”
-		};
+		this.defaults = $.extend({}, Distpikcer.DEFAULTS, $.isPlainObject(options) ? options : {});
+		this.placeholders = $.extend({}, Distpikcer.DEFAULTS);
+		
 		this.init();
 	}
+	Distpikcer.DEFAULTS = {
+		autoSelect: true,
+		province: "--选择省--",
+		city: "--选择市--",
+		district: "--选择区--",
+		placeholder: true	//占位符，即省市区三个下拉列表选项的特殊选项，如“——选择省——”
+	},
 	Distpikcer.prototype = {
 		constructor: Distpikcer,
 
@@ -86,11 +88,14 @@ define(function(require,exports,module){
 			}
 		},
 		addCustomEvents: function(){
-			$.each(["province", "city", "district"], $.proxy(function(i,type){
-
-			},this));
+			var ZX = {
+				"北京":"",
+				"上海":"",
+				"天津":"",
+				"重庆":""
+			};
 			$(this.target).on("click",$.proxy(function(event){
-				console.log(event.target.tagName)
+				//console.log(event.target.tagName)
 				var srcEvent = event.target,
 				 	tagName = event.target.tagName;
 				if(tagName == "LABEL"){
@@ -100,16 +105,26 @@ define(function(require,exports,module){
 					var $srcEvent = $(srcEvent),
 						type = $srcEvent.attr("type"),
 						index = $srcEvent.attr("index");
-					if(type){ //点击是列表中的元素，触发select的选择操作
+					if(type){ //点击是列表中的元素，触发select的选择操作						
 						this["label" + type].html($srcEvent.html());
 						this["$" + type][0].selectedIndex = index;
 						this["$" + type].trigger("change");
 						this["ul" + type].hide();
+						if(type == "province"){//直辖市就隐藏”市“这一级下拉菜单
+							if(label in ZX){
+								this.$city.get(0).selectedIndex = 1;
+								this.$city.trigger("change");
+								this.ulcity.parent("div").hide();
+							}else{
+								this.ulcity.parent("div").show();
+							}
+						}
+						
 					}else{//点击的是label外层的A标签	
 						$(srcEvent).siblings().toggle();
 					}
 					return false;
-				}else if(tagName == "I"){
+				}else if(tagName == "I"){//点钟下拉三角icon
 					var type = $(srcEvent).attr("type");		
 					this["ul" + type].toggle();
 				}
@@ -171,7 +186,6 @@ define(function(require,exports,module){
         		});
       		}
 
-			//console.log(this.template(options));
 			customUl.html(this.ultemplete(options,type));
 			$select.html(this.template(options));
 			customlabel.html($select.val());
